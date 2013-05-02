@@ -30,6 +30,7 @@ int main(int argc, char **argv){
   struct {
     char  host[1024];
     int   port;
+    char  db[64];
   } redis_addr;
 
   /* option parsing */
@@ -48,7 +49,7 @@ int main(int argc, char **argv){
   if(!similarityFunc){
     printf("invalid option: %s\n", argv[1]);
     return 1;
-  } else if(argc < 4 || argc > 5){
+  } else if(argc < 5 || argc > 6){
     printf("wrong number of arguments\n");
     print_usage(argv[0]);
     return 1;
@@ -58,7 +59,8 @@ int main(int argc, char **argv){
   itemID = argv[3];
   redis_addr.host[0] = 0;
   redis_addr.port = 0;
-
+  redis_addr.db[0] = 0;
+  
   /* configure redis location */
   if(argc > 4){
     char* has_port = strchr(argv[4], ':');
@@ -69,6 +71,12 @@ int main(int argc, char **argv){
     } else {
       strncpy(redis_addr.host, argv[4], sizeof(redis_addr.host));
     }
+  }
+  
+  if(argc > 5){
+    strcpy(redis_addr.db, argv[5]);
+  } else {
+    strcpy(redis_addr.db, "0");
   }
 
   /* default redis location */
@@ -82,6 +90,8 @@ int main(int argc, char **argv){
   struct timeval timeout = { 1, 500000 }; 
   c = redisConnectWithTimeout(redis_addr.host, redis_addr.port, timeout);
 
+  redisCommand(c, "SELECT %s", redis_addr.db);
+  
   if(c->err){
     printf("connection to redis failed: %s\n", c->errstr);
     return 1;
